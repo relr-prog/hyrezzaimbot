@@ -1,18 +1,16 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
+# File system
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# Other files and folders
-.settings/
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
 
-# Executables
-*.swf
-*.air
-*.ipa
-*.apk
-
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# Testing / lokal
+test.lua
+backup/
+*.log

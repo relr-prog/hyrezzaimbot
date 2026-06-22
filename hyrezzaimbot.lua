@@ -1,6 +1,12 @@
--- HyrezzAimbot v2.0 (ESP + Predictive Aimbot + Anti-Detection)
+-- HyrezzAimbot v3.0 (Optimized for Velocity PC)
 -- by PTB, Nyx Kayrouz 2.2, TMTS
+-- Full ESP + Predictive Aimbot + Anti-Detection
+-- GitHub: https://github.com/relr-prog/hyrezzaimbot
 
+-- ===== VERIFY EXECUTION =====
+warn("[Hyrezz] Script loaded! Checking environment...")
+
+-- ===== SERVICES =====
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -9,10 +15,18 @@ local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 
--
+-- ===== SAFE GET =====
+local function safeGet(service)
+    local success, result = pcall(function()
+        return service
+    end)
+    return success and result or nil
+end
+
+-- ===== CONFIG DEFAULT =====
 local CONFIG = {
     CIRCLE_RADIUS = 150,
-    LOCK_PRIORITY = "CLOSEST", -- "CLOSEST" "CENTER" for you to select lock priority
+    LOCK_PRIORITY = "CLOSEST",
     WARNING_ENABLED = true,
     MAX_KILLS = 10,
     SPACE_PRESS_COUNT = 8,
@@ -23,7 +37,7 @@ local CONFIG = {
     GRAVITY = -150
 }
 
--
+-- ===== VARIABLES =====
 local target = nil
 local targetVelocity = Vector3.new()
 local lastPos = nil
@@ -39,8 +53,10 @@ local settingsGui = nil
 local circleGui = nil
 local warningText = nil
 local watermark = nil
+local espEnabled = true
+local aimbotEnabled = true
 
--
+-- ===== SAFE CALL =====
 local function safeCall(func)
     local success, err = pcall(func)
     if not success then
@@ -49,48 +65,58 @@ local function safeCall(func)
     return success
 end
 
--
+-- ===== WATERMARK (Velocity Optimized) =====
 local function createWatermark()
-    if watermark then watermark:Destroy() end
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "WatermarkGUI"
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.ResetOnSpawn = false
+    if watermark then safeCall(function() watermark:Destroy() end) end
+    local screenGui = safeCall(function()
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "WatermarkGUI"
+        gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        gui.ResetOnSpawn = false
+        return gui
+    end)
+    if not screenGui then return end
     watermark = screenGui
 
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 250, 0, 30)
-    frame.Position = UDim2.new(0, 5, 0, 5)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    frame.BackgroundTransparency = 0.3
-    frame.BorderSizePixel = 2
-    frame.BorderColor3 = Color3.fromRGB(200, 0, 0)
-    frame.Parent = screenGui
-    frame.Name = "WatermarkFrame"
+    local frame = safeCall(function()
+        local f = Instance.new("Frame")
+        f.Size = UDim2.new(0, 250, 0, 30)
+        f.Position = UDim2.new(0, 5, 0, 5)
+        f.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        f.BackgroundTransparency = 0.3
+        f.BorderSizePixel = 2
+        f.BorderColor3 = Color3.fromRGB(200, 0, 0)
+        f.Parent = screenGui
+        f.Name = "WatermarkFrame"
+        return f
+    end)
+    if not frame then return end
 
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(0, 180, 0, 30)
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.Text = "HyrezzAimbot"
-    title.TextColor3 = Color3.fromRGB(0, 150, 255)
-    title.BackgroundTransparency = 1
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 16
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = frame
+    safeCall(function()
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(0, 180, 0, 30)
+        title.Position = UDim2.new(0, 0, 0, 0)
+        title.Text = "HyrezzAimbot"
+        title.TextColor3 = Color3.fromRGB(0, 150, 255)
+        title.BackgroundTransparency = 1
+        title.Font = Enum.Font.GothamBold
+        title.TextSize = 16
+        title.TextXAlignment = Enum.TextXAlignment.Left
+        title.Parent = frame
 
-    local sub = Instance.new("TextLabel")
-    sub.Size = UDim2.new(0, 200, 0, 15)
-    sub.Position = UDim2.new(0, 0, 0, 18)
-    sub.Text = "follow nyx kayrouz 2.2 & thanks to ptb TMTS"
-    sub.TextColor3 = Color3.fromRGB(200, 200, 200)
-    sub.BackgroundTransparency = 1
-    sub.Font = Enum.Font.Gotham
-    sub.TextSize = 9
-    sub.TextXAlignment = Enum.TextXAlignment.Left
-    sub.Parent = frame
+        local sub = Instance.new("TextLabel")
+        sub.Size = UDim2.new(0, 200, 0, 15)
+        sub.Position = UDim2.new(0, 0, 0, 18)
+        sub.Text = "follow nyx kayrouz 2.2 & thanks to ptb TMTS"
+        sub.TextColor3 = Color3.fromRGB(200, 200, 200)
+        sub.BackgroundTransparency = 1
+        sub.Font = Enum.Font.Gotham
+        sub.TextSize = 9
+        sub.TextXAlignment = Enum.TextXAlignment.Left
+        sub.Parent = frame
+    end)
 
-    -
+    -- Animate watermark color
     task.spawn(function()
         local t = 0
         while watermark and watermark.Parent do
@@ -99,44 +125,57 @@ local function createWatermark()
             local g = 50 + 150 * (0.5 + 0.5 * math.sin(t))
             local b = 255
             safeCall(function()
-                title.TextColor3 = Color3.fromRGB(r, g, b)
+                local title = watermark:FindFirstChild("WatermarkFrame") and watermark.WatermarkFrame:FindFirstChild("TextLabel")
+                if title then
+                    title.TextColor3 = Color3.fromRGB(r, g, b)
+                end
             end)
             task.wait(0.05)
         end
     end)
 end
 
--
+-- ===== SETTINGS GUI (Velocity Optimized) =====
 local function createSettingsGUI()
-    if settingsGui then settingsGui:Destroy() end
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "SettingsGUI"
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.ResetOnSpawn = false
+    if settingsGui then safeCall(function() settingsGui:Destroy() end) end
+    local screenGui = safeCall(function()
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "SettingsGUI"
+        gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        gui.ResetOnSpawn = false
+        return gui
+    end)
+    if not screenGui then return end
     settingsGui = screenGui
 
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 380, 0, 320)
-    mainFrame.Position = UDim2.new(0.5, -190, 0.6, -160)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(80, 0, 0) -- merah tua
-    mainFrame.BackgroundTransparency = 0.1
-    mainFrame.BorderSizePixel = 4
-    mainFrame.BorderColor3 = Color3.fromRGB(0, 0, 0) -- hitam
-    mainFrame.Parent = screenGui
-    mainFrame.Name = "MainFrame"
-    mainFrame.ClipsDescendants = true
+    local mainFrame = safeCall(function()
+        local f = Instance.new("Frame")
+        f.Size = UDim2.new(0, 380, 0, 320)
+        f.Position = UDim2.new(0.5, -190, 0.6, -160)
+        f.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+        f.BackgroundTransparency = 0.1
+        f.BorderSizePixel = 4
+        f.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        f.Parent = screenGui
+        f.Name = "MainFrame"
+        f.ClipsDescendants = true
+        return f
+    end)
+    if not mainFrame then return end
 
-    -
-    local innerBorder = Instance.new("Frame")
-    innerBorder.Size = UDim2.new(1, -8, 1, -8)
-    innerBorder.Position = UDim2.new(0, 4, 0, 4)
-    innerBorder.BackgroundTransparency = 1
-    innerBorder.BorderSizePixel = 2
-    innerBorder.BorderColor3 = Color3.fromRGB(180, 0, 0)
-    innerBorder.Parent = mainFrame
-    innerBorder.Name = "InnerBorder"
+    -- Inner Border
+    safeCall(function()
+        local inner = Instance.new("Frame")
+        inner.Size = UDim2.new(1, -8, 1, -8)
+        inner.Position = UDim2.new(0, 4, 0, 4)
+        inner.BackgroundTransparency = 1
+        inner.BorderSizePixel = 2
+        inner.BorderColor3 = Color3.fromRGB(180, 0, 0)
+        inner.Parent = mainFrame
+        inner.Name = "InnerBorder"
+    end)
 
-    -
+    -- Fade In Animation
     mainFrame.Position = UDim2.new(0.5, -190, 0.8, -160)
     mainFrame.BackgroundTransparency = 1
     local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -145,67 +184,80 @@ local function createSettingsGUI()
     tween1:Play()
     tween2:Play()
 
-    -
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 35)
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.Text = "⚙️ HyrezzAimbot Settings"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.BackgroundTransparency = 1
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 18
-    title.Parent = mainFrame
+    -- Title
+    safeCall(function()
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, 0, 0, 35)
+        title.Position = UDim2.new(0, 0, 0, 0)
+        title.Text = "⚙️ HyrezzAimbot Settings"
+        title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        title.BackgroundTransparency = 1
+        title.Font = Enum.Font.GothamBold
+        title.TextSize = 18
+        title.Parent = mainFrame
 
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 30, 0, 30)
-    closeBtn.Position = UDim2.new(1, -35, 0, 5)
-    closeBtn.Text = "✕"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 16
-    closeBtn.Parent = mainFrame
-    closeBtn.MouseButton1Click:Connect(function()
-        if settingsGui then settingsGui:Destroy(); settingsGui = nil end
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.new(0, 30, 0, 30)
+        closeBtn.Position = UDim2.new(1, -35, 0, 5)
+        closeBtn.Text = "✕"
+        closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        closeBtn.BorderSizePixel = 0
+        closeBtn.Font = Enum.Font.GothamBold
+        closeBtn.TextSize = 16
+        closeBtn.Parent = mainFrame
+        closeBtn.MouseButton1Click:Connect(function()
+            if settingsGui then settingsGui:Destroy(); settingsGui = nil end
+        end)
     end)
 
-    -- Scrolling frame for options
-    local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Size = UDim2.new(1, -10, 1, -50)
-    scrollFrame.Position = UDim2.new(0, 5, 0, 40)
-    scrollFrame.BackgroundTransparency = 1
-    scrollFrame.BorderSizePixel = 0
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 350)
-    scrollFrame.ScrollBarThickness = 6
-    scrollFrame.Parent = mainFrame
+    -- Scroll Frame
+    local scrollFrame = safeCall(function()
+        local sf = Instance.new("ScrollingFrame")
+        sf.Size = UDim2.new(1, -10, 1, -50)
+        sf.Position = UDim2.new(0, 5, 0, 40)
+        sf.BackgroundTransparency = 1
+        sf.BorderSizePixel = 0
+        sf.CanvasSize = UDim2.new(0, 0, 0, 350)
+        sf.ScrollBarThickness = 6
+        sf.Parent = mainFrame
+        return sf
+    end)
+    if not scrollFrame then return end
 
     local function addLabel(text, yPos)
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(0.9, 0, 0, 20)
-        label.Position = UDim2.new(0.05, 0, 0, yPos)
-        label.Text = text
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.BackgroundTransparency = 1
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 13
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = scrollFrame
+        local label = safeCall(function()
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(0.9, 0, 0, 20)
+            l.Position = UDim2.new(0.05, 0, 0, yPos)
+            l.Text = text
+            l.TextColor3 = Color3.fromRGB(255, 255, 255)
+            l.BackgroundTransparency = 1
+            l.Font = Enum.Font.Gotham
+            l.TextSize = 13
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.Parent = scrollFrame
+            return l
+        end)
         return label
     end
 
     local function addToggle(text, key, yPos, default)
         local label = addLabel(text, yPos)
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 60, 0, 20)
-        btn.Position = UDim2.new(0.8, 0, 0, yPos)
-        btn.Text = default and "ON" or "OFF"
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.BackgroundColor3 = default and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
-        btn.BorderSizePixel = 0
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 12
-        btn.Parent = scrollFrame
+        local btn = safeCall(function()
+            local b = Instance.new("TextButton")
+            b.Size = UDim2.new(0, 60, 0, 20)
+            b.Position = UDim2.new(0.8, 0, 0, yPos)
+            b.Text = default and "ON" or "OFF"
+            b.TextColor3 = Color3.fromRGB(255, 255, 255)
+            b.BackgroundColor3 = default and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+            b.BorderSizePixel = 0
+            b.Font = Enum.Font.GothamBold
+            b.TextSize = 12
+            b.Parent = scrollFrame
+            return b
+        end)
+        if not btn then return end
         btn.MouseButton1Click:Connect(function()
             CONFIG[key] = not CONFIG[key]
             btn.Text = CONFIG[key] and "ON" or "OFF"
@@ -216,22 +268,26 @@ local function createSettingsGUI()
 
     local function addSlider(text, key, yPos, min, max, default)
         local label = addLabel(text .. ": " .. tostring(default), yPos)
-        local slider = Instance.new("TextBox")
-        slider.Size = UDim2.new(0, 60, 0, 20)
-        slider.Position = UDim2.new(0.8, 0, 0, yPos)
-        slider.Text = tostring(default)
-        slider.TextColor3 = Color3.fromRGB(255, 255, 255)
-        slider.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        slider.BorderSizePixel = 0
-        slider.Font = Enum.Font.Gotham
-        slider.TextSize = 12
-        slider.Parent = scrollFrame
+        local slider = safeCall(function()
+            local s = Instance.new("TextBox")
+            s.Size = UDim2.new(0, 60, 0, 20)
+            s.Position = UDim2.new(0.8, 0, 0, yPos)
+            s.Text = tostring(default)
+            s.TextColor3 = Color3.fromRGB(255, 255, 255)
+            s.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+            s.BorderSizePixel = 0
+            s.Font = Enum.Font.Gotham
+            s.TextSize = 12
+            s.Parent = scrollFrame
+            return s
+        end)
+        if not slider then return end
         slider.FocusLost:Connect(function(enterPressed)
             if enterPressed then
                 local val = tonumber(slider.Text)
                 if val and val >= min and val <= max then
                     CONFIG[key] = val
-                    label.Text = text .. ": " .. tostring(val)
+                    if label then label.Text = text .. ": " .. tostring(val) end
                 else
                     slider.Text = tostring(CONFIG[key])
                 end
@@ -251,80 +307,100 @@ local function createSettingsGUI()
     yPos = yPos + 30
 
     local priorityLabel = addLabel("Priority: " .. CONFIG.LOCK_PRIORITY, yPos)
-    local priorityBtn = Instance.new("TextButton")
-    priorityBtn.Size = UDim2.new(0, 80, 0, 20)
-    priorityBtn.Position = UDim2.new(0.7, 0, 0, yPos)
-    priorityBtn.Text = CONFIG.LOCK_PRIORITY
-    priorityBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    priorityBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-    priorityBtn.BorderSizePixel = 0
-    priorityBtn.Font = Enum.Font.GothamBold
-    priorityBtn.TextSize = 12
-    priorityBtn.Parent = scrollFrame
-    priorityBtn.MouseButton1Click:Connect(function()
-        CONFIG.LOCK_PRIORITY = (CONFIG.LOCK_PRIORITY == "CLOSEST") and "CENTER" or "CLOSEST"
-        priorityBtn.Text = CONFIG.LOCK_PRIORITY
-        priorityLabel.Text = "Priority: " .. CONFIG.LOCK_PRIORITY
+    local priorityBtn = safeCall(function()
+        local pb = Instance.new("TextButton")
+        pb.Size = UDim2.new(0, 80, 0, 20)
+        pb.Position = UDim2.new(0.7, 0, 0, yPos)
+        pb.Text = CONFIG.LOCK_PRIORITY
+        pb.TextColor3 = Color3.fromRGB(255, 255, 255)
+        pb.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+        pb.BorderSizePixel = 0
+        pb.Font = Enum.Font.GothamBold
+        pb.TextSize = 12
+        pb.Parent = scrollFrame
+        return pb
     end)
+    if priorityBtn then
+        priorityBtn.MouseButton1Click:Connect(function()
+            CONFIG.LOCK_PRIORITY = (CONFIG.LOCK_PRIORITY == "CLOSEST") and "CENTER" or "CLOSEST"
+            priorityBtn.Text = CONFIG.LOCK_PRIORITY
+            if priorityLabel then priorityLabel.Text = "Priority: " .. CONFIG.LOCK_PRIORITY end
+        end)
+    end
     yPos = yPos + 30
 
-    local confirmBtn = Instance.new("TextButton")
-    confirmBtn.Size = UDim2.new(0.6, 0, 0, 30)
-    confirmBtn.Position = UDim2.new(0.2, 0, 0, yPos)
-    confirmBtn.Text = " SAVE & START"
-    confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-    confirmBtn.BorderSizePixel = 0
-    confirmBtn.Font = Enum.Font.GothamBold
-    confirmBtn.TextSize = 14
-    confirmBtn.Parent = scrollFrame
-    confirmBtn.MouseButton1Click:Connect(function()
-        if settingsGui then settingsGui:Destroy(); settingsGui = nil end
-        warn("[Hyrezz] Settings applied")
+    safeCall(function()
+        local confirmBtn = Instance.new("TextButton")
+        confirmBtn.Size = UDim2.new(0.6, 0, 0, 30)
+        confirmBtn.Position = UDim2.new(0.2, 0, 0, yPos)
+        confirmBtn.Text = "✅ SAVE & START"
+        confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        confirmBtn.BorderSizePixel = 0
+        confirmBtn.Font = Enum.Font.GothamBold
+        confirmBtn.TextSize = 14
+        confirmBtn.Parent = scrollFrame
+        confirmBtn.MouseButton1Click:Connect(function()
+            if settingsGui then settingsGui:Destroy(); settingsGui = nil end
+            warn("[Hyrezz] Settings applied")
+        end)
     end)
 
-    -
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, yPos + 40)
 end
 
--
+-- ===== CIRCLE GUI (Velocity Optimized) =====
 local function createCircle()
-    if circleGui then circleGui:Destroy() end
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "CircleGUI"
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.ResetOnSpawn = false
+    if circleGui then safeCall(function() circleGui:Destroy() end) end
+    local screenGui = safeCall(function()
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "CircleGUI"
+        gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        gui.ResetOnSpawn = false
+        return gui
+    end)
+    if not screenGui then return end
     circleGui = screenGui
 
-    local circle = Instance.new("Frame")
-    circle.Size = UDim2.new(0, CONFIG.CIRCLE_RADIUS * 2, 0, CONFIG.CIRCLE_RADIUS * 2)
-    circle.Position = UDim2.new(0.5, -CONFIG.CIRCLE_RADIUS, 0.5, -CONFIG.CIRCLE_RADIUS)
-    circle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    circle.BackgroundTransparency = 0.8
-    circle.BorderSizePixel = 2
-    circle.BorderColor3 = Color3.fromRGB(255, 0, 0)
-    circle.Parent = screenGui
-    circle.Name = "Circle"
-    circle.Visible = CONFIG.ESP_ENABLED
+    local circle = safeCall(function()
+        local c = Instance.new("Frame")
+        c.Size = UDim2.new(0, CONFIG.CIRCLE_RADIUS * 2, 0, CONFIG.CIRCLE_RADIUS * 2)
+        c.Position = UDim2.new(0.5, -CONFIG.CIRCLE_RADIUS, 0.5, -CONFIG.CIRCLE_RADIUS)
+        c.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        c.BackgroundTransparency = 0.8
+        c.BorderSizePixel = 2
+        c.BorderColor3 = Color3.fromRGB(255, 0, 0)
+        c.Parent = screenGui
+        c.Name = "Circle"
+        c.Visible = CONFIG.ESP_ENABLED
+        return c
+    end)
+    if not circle then return end
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(1, 0)
-    corner.Parent = circle
+    safeCall(function()
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = circle
 
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 0, 50)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
-    })
-    gradient.Rotation = 0
-    gradient.Parent = circle
+        local gradient = Instance.new("UIGradient")
+        gradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 0, 50)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+        })
+        gradient.Rotation = 0
+        gradient.Parent = circle
+    end)
 
+    -- Animate gradient
     task.spawn(function()
         local rot = 0
         while circleGui and circleGui.Parent do
             rot = (rot + 0.5) % 360
-            safeCall(function() gradient.Rotation = rot end)
+            safeCall(function()
+                local grad = circleGui:FindFirstChild("Circle") and circleGui.Circle:FindFirstChild("UIGradient")
+                if grad then grad.Rotation = rot end
+            end)
             task.wait(0.05)
         end
     end)
@@ -332,38 +408,46 @@ local function createCircle()
     return screenGui
 end
 
--
+-- ===== ESP FUNCTIONS (Velocity Optimized) =====
 local function createESPLine(player)
     if espLines[player] then safeCall(function() espLines[player]:Destroy() end) end
-    local line = Instance.new("Frame")
-    line.Size = UDim2.new(0, 2, 0, 200)
-    line.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    line.BorderSizePixel = 0
-    line.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    line.Name = "ESPLine_" .. player.Name
-    line.ZIndex = 999
-    espLines[player] = line
+    local line = safeCall(function()
+        local l = Instance.new("Frame")
+        l.Size = UDim2.new(0, 2, 0, 200)
+        l.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        l.BorderSizePixel = 0
+        l.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        l.Name = "ESPLine_" .. player.Name
+        l.ZIndex = 999
+        return l
+    end)
+    if line then espLines[player] = line end
 end
 
 local function createESPBox(player)
     if espBoxes[player] then safeCall(function() espBoxes[player]:Destroy() end) end
-    local box = Instance.new("Frame")
-    box.Size = UDim2.new(0, 50, 0, 70)
-    box.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    box.BackgroundTransparency = 0.7
-    box.BorderSizePixel = 2
-    box.BorderColor3 = Color3.fromRGB(0, 255, 0)
-    box.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    box.Name = "ESPBox_" .. player.Name
-    box.ZIndex = 999
-    espBoxes[player] = box
+    local box = safeCall(function()
+        local b = Instance.new("Frame")
+        b.Size = UDim2.new(0, 50, 0, 70)
+        b.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        b.BackgroundTransparency = 0.7
+        b.BorderSizePixel = 2
+        b.BorderColor3 = Color3.fromRGB(0, 255, 0)
+        b.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        b.Name = "ESPBox_" .. player.Name
+        b.ZIndex = 999
+        return b
+    end)
+    if box then espBoxes[player] = box end
 end
 
--
+-- ===== GET TARGETS =====
 local function getTargets()
     local targets = {}
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local playerPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position
+    local playerPos = safeCall(function()
+        return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position
+    end)
     if not playerPos then return targets end
 
     for _, player in ipairs(Players:GetPlayers()) do
@@ -376,18 +460,28 @@ local function getTargets()
             local dist = (pos - playerPos).Magnitude
             if dist > CONFIG.MAX_DISTANCE then continue end
 
-            local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
+            local screenPos = safeCall(function()
+                return Camera:WorldToViewportPoint(pos)
+            end)
+            if not screenPos then continue end
+            local onScreen = screenPos
             if not onScreen then continue end
-            local screenPosHead, _ = Camera:WorldToViewportPoint(headPos)
+            local screenPosHead = safeCall(function()
+                return Camera:WorldToViewportPoint(headPos)
+            end)
+            if not screenPosHead then continue end
+
             local screenDist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
 
-            -
+            -- Visibility Check
             local visible = true
-            local raycastParams = RaycastParams.new()
-            raycastParams.FilterDescendantsInstances = {player.Character, LocalPlayer.Character}
-            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-            local ray = Workspace:Raycast(Camera.CFrame.Position, headPos - Camera.CFrame.Position, raycastParams)
-            if ray then visible = false end
+            safeCall(function()
+                local raycastParams = RaycastParams.new()
+                raycastParams.FilterDescendantsInstances = {player.Character, LocalPlayer.Character}
+                raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+                local ray = Workspace:Raycast(Camera.CFrame.Position, headPos - Camera.CFrame.Position, raycastParams)
+                if ray then visible = false end
+            end)
 
             table.insert(targets, {
                 player = player,
@@ -407,7 +501,7 @@ local function getTargets()
     return targets
 end
 
--
+-- ===== UPDATE VELOCITY =====
 local function updateVelocity(targetData)
     if not targetData then return end
     local now = tick()
@@ -422,7 +516,7 @@ local function updateVelocity(targetData)
     lastTime = now
 end
 
--
+-- ===== PREDICTIVE AIM =====
 local function predictAim(targetData)
     local headPos = targetData.headPos
     local vel = targetVelocity
@@ -433,55 +527,63 @@ local function predictAim(targetData)
     return headPos + vel * time + Vector3.new(0, drop, 0)
 end
 
--
+-- ===== KILL WARNING =====
 local function showKillWarning()
-    if warningText then warningText:Destroy() end
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "KillWarningGUI"
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.ResetOnSpawn = false
+    if warningText then safeCall(function() warningText:Destroy() end) end
+    local screenGui = safeCall(function()
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "KillWarningGUI"
+        gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        gui.ResetOnSpawn = false
+        return gui
+    end)
+    if not screenGui then return end
     warningText = screenGui
 
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 400, 0, 80)
-    frame.Position = UDim2.new(0.5, -200, 0.4, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-    frame.BackgroundTransparency = 0.4
-    frame.BorderSizePixel = 2
-    frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    frame.Parent = screenGui
+    local frame = safeCall(function()
+        local f = Instance.new("Frame")
+        f.Size = UDim2.new(0, 400, 0, 80)
+        f.Position = UDim2.new(0.5, -200, 0.4, 0)
+        f.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        f.BackgroundTransparency = 0.4
+        f.BorderSizePixel = 2
+        f.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        f.Parent = screenGui
+        return f
+    end)
+    if not frame then return end
 
-    local text = Instance.new("TextLabel")
-    text.Size = UDim2.new(1, 0, 1, 0)
-    text.Text = " TERLALU BANYAK KILL! \nTekan SPACE " .. CONFIG.SPACE_PRESS_COUNT .. " kali untuk lanjut"
-    text.TextColor3 = Color3.fromRGB(255, 255, 255)
-    text.BackgroundTransparency = 1
-    text.Font = Enum.Font.GothamBold
-    text.TextSize = 16
-    text.TextWrapped = true
-    text.TextScaled = true
-    text.Parent = frame
+    safeCall(function()
+        local text = Instance.new("TextLabel")
+        text.Size = UDim2.new(1, 0, 1, 0)
+        text.Text = "⚠️ TERLALU BANYAK KILL! ⚠️\nTekan SPACE " .. CONFIG.SPACE_PRESS_COUNT .. " kali untuk lanjut"
+        text.TextColor3 = Color3.fromRGB(255, 255, 255)
+        text.BackgroundTransparency = 1
+        text.Font = Enum.Font.GothamBold
+        text.TextSize = 16
+        text.TextWrapped = true
+        text.TextScaled = true
+        text.Parent = frame
+    end)
 end
 
--
+-- ===== UPDATE ESP & AIMBOT =====
 local function updateESP()
-    if not CONFIG.ESP_ENABLED then
+    if not espEnabled then
         for player, line in pairs(espLines) do safeCall(function() line:Destroy() end) end
         espLines = {}
         for player, box in pairs(espBoxes) do safeCall(function() box:Destroy() end) end
         espBoxes = {}
-        if circleGui then circleGui.Enabled = false end
+        if circleGui then safeCall(function() circleGui.Enabled = false end) end
         return
     end
-    if circleGui then 
-        circleGui.Enabled = true
-        local circle = circleGui:FindFirstChild("Circle")
-        if circle then circle.Visible = true end
-    end
+    if circleGui then safeCall(function() circleGui.Enabled = true end) end
 
     local targets = getTargets()
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local playerPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position
+    local playerPos = safeCall(function()
+        return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position
+    end)
     if not playerPos then return end
 
     local closestTarget = nil
@@ -500,27 +602,31 @@ local function updateESP()
         local line = espLines[player]
         local box = espBoxes[player]
 
-        -
+        -- Line from top-center to target
         local topCenter = Vector2.new(Camera.ViewportSize.X / 2, 0)
-        line.Position = UDim2.new(0, topCenter.X, 0, topCenter.Y)
-        line.Size = UDim2.new(0, 2, 0, (screenPos - topCenter).Magnitude)
-        line.Rotation = math.deg(math.atan2(screenPos.Y - topCenter.Y, screenPos.X - topCenter.X))
-        line.Visible = true
+        if line then
+            line.Position = UDim2.new(0, topCenter.X, 0, topCenter.Y)
+            line.Size = UDim2.new(0, 2, 0, (screenPos - topCenter).Magnitude)
+            line.Rotation = math.deg(math.atan2(screenPos.Y - topCenter.Y, screenPos.X - topCenter.X))
+            line.Visible = true
+        end
 
-        -
-        local boxSize = 50
-        local boxPos = screenPos - Vector2.new(boxSize/2, boxSize/2)
-        box.Position = UDim2.new(0, boxPos.X, 0, boxPos.Y)
-        box.Size = UDim2.new(0, boxSize, 0, boxSize)
-        box.Visible = true
+        -- Box
+        if box then
+            local boxSize = 50
+            local boxPos = screenPos - Vector2.new(boxSize/2, boxSize/2)
+            box.Position = UDim2.new(0, boxPos.X, 0, boxPos.Y)
+            box.Size = UDim2.new(0, boxSize, 0, boxSize)
+            box.Visible = true
 
-        if visible then
-            local blink = math.sin(tick() * 4) > 0.5
-            box.BorderColor3 = blink and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(0, 200, 0)
-            line.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        else
-            box.BorderColor3 = Color3.fromRGB(255, 0, 0)
-            line.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            if visible then
+                local blink = math.sin(tick() * 4) > 0.5
+                box.BorderColor3 = blink and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(0, 200, 0)
+                if line then line.BackgroundColor3 = Color3.fromRGB(0, 255, 0) end
+            else
+                box.BorderColor3 = Color3.fromRGB(255, 0, 0)
+                if line then line.BackgroundColor3 = Color3.fromRGB(255, 0, 0) end
+            end
         end
 
         if data.screenDist < minDist then
@@ -529,7 +635,7 @@ local function updateESP()
         end
     end
 
-    -
+    -- Clean up disconnected players
     for player, line in pairs(espLines) do
         if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
             safeCall(function() line:Destroy() end)
@@ -543,8 +649,8 @@ local function updateESP()
         end
     end
 
-    -
-    if CONFIG.AIMBOT_ENABLED and not stopAimbot and UserInputService:IsKeyDown(Enum.KeyCode.MouseButton2) then
+    -- Aimbot
+    if aimbotEnabled and not stopAimbot and UserInputService:IsKeyDown(Enum.KeyCode.MouseButton2) then
         if closestTarget then
             local predicted = predictAim(closestTarget)
             safeCall(function()
@@ -553,7 +659,7 @@ local function updateESP()
         end
     end
 
-    -
+    -- Kill tracking
     if target and target.Character and target.Character:FindFirstChild("Humanoid") then
         if target.Character.Humanoid.Health <= 0 then
             killCount = killCount + 1
@@ -575,12 +681,12 @@ local function updateESP()
     end
 end
 
--
+-- ===== KEYBINDS =====
 local function setupKeybinds()
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
 
-        -
+        -- Space continue
         if input.KeyCode == Enum.KeyCode.Space and isWaitingToContinue then
             spacePressCount = spacePressCount + 1
             if spacePressCount >= CONFIG.SPACE_PRESS_COUNT then
@@ -592,30 +698,53 @@ local function setupKeybinds()
             end
         end
 
-        -
+        -- Toggle settings
         if input.KeyCode == Enum.KeyCode.RightControl then
-            if settingsGui then settingsGui:Destroy(); settingsGui = nil
+            if settingsGui then safeCall(function() settingsGui:Destroy() end); settingsGui = nil
             else createSettingsGUI() end
         end
     end)
 end
 
--
+-- ===== PLAYER REMOVED =====
 local function onPlayerRemoved(player)
     if espLines[player] then safeCall(function() espLines[player]:Destroy() end) end
     if espBoxes[player] then safeCall(function() espBoxes[player]:Destroy() end) end
 end
 Players.PlayerRemoving:Connect(onPlayerRemoved)
 
--
+-- ===== START =====
 local function start()
+    warn("[Hyrezz] Initializing...")
+    
+    -- Check if LocalPlayer is valid
+    if not LocalPlayer or not LocalPlayer.Character then
+        warn("[Hyrezz] Waiting for character...")
+        LocalPlayer.CharacterAdded:Wait()
+    end
+
+    -- Create GUI elements
     createWatermark()
     createCircle()
     createSettingsGUI()
     setupKeybinds()
+    
+    -- Start the update loop
     RunService.Heartbeat:Connect(updateESP)
+    
+    -- Enable by default
+    espEnabled = true
+    aimbotEnabled = true
+    
     warn("[Hyrezz] Aimbot + ESP Loaded!")
     warn("[Hyrezz] Right Ctrl - Settings | Right Click - Aim | Space (8x) - Continue after kill warning")
+    warn("[Hyrezz] If nothing appears, try pressing Right Ctrl to open settings")
 end
 
-start()
+-- ===== SAFE START =====
+local success, err = pcall(start)
+if not success then
+    warn("[Hyrezz] Failed to start: " .. tostring(err))
+end
+
+warn("[Hyrezz] Script execution complete! Check console for any errors.")
